@@ -4,4 +4,4 @@ const isLocal = window.location.hostname === "127.0.0.1" ||
 
 const BASE_URL = isLocal
   ? "http://127.0.0.1:5000"
-  : "https://godesignapi-production.up.railway.app";
+  : "https://godesignapp2-production.up.railway.app/";
