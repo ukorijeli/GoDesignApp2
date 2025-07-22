@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Görev Detayı - GoDesign Tracking</title>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        if (!localStorage.getItem('loggedInUser')) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <style>
+        .editable-cell input[type="text"],
+        .editable-cell input[type="number"] {
+            width: calc(100% - 10px);
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+        tr.editing {
+            background-color: #fffacd;
+        }
+        .admin-controls button {
+            padding: 3px 8px;
+            font-size: 0.8em;
+            margin-bottom: 2px;
+        }
+        .admin-button.save { background-color: #28a745; }
+        .admin-button.cancel { background-color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="header">
+<div class="header-left">
+    <a href="index.html" class="header-logo-link">
+        <img src="1630610815624.jpg" alt="GoDesign Logo" class="header-logo">
+    </a>
+</div>
+        <div class="header-right">
+            <div class="user-profile-container">
+                <div class="user-profile" id="userProfileInitial">U</div>
+                <button class="logout-button" id="logoutButton">Çıkış Yap</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1 id="task-detail-title">Görev Detayları</h1>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ecf0f1; padding-bottom: 10px; margin-bottom: 20px;">
+             <h3 style="border-bottom: none; margin-bottom: 0;">Alt Görevler ve İlerlemeler</h3>
+             <a href="#" id="exportExcelBtn" class="admin-button" style="background-color: #16a085; text-decoration: none; display: none;">
+                Excel Olarak İndir
+             </a>
+        </div>
+
+        <div class="table-container"> <table class="detail-table">
+            <thead>
+                <tr>
+                    <th>Alt Görev Adı</th>
+                    <th>Bina İçi</th>
+                    <th>Bina Dışı</th>
+                    <th>Sözleşme</th>
+                    <th>Yapılan</th>
+                    <th>Yüzde</th>
+                    <th>Gereken Gün</th>
+                    <th id="subtaskAdminHeader" style="display:none;">İşlem</th>
+                </tr>
+            </thead>
+            <tbody id="sub-tasks-body">
+                <tr><td colspan="8">Alt görev verileri yükleniyor...</td></tr>
+            </tbody>
+        </table>
+		</div>
+
+        <div id="addSubtaskSection" style="margin-top: 30px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #f5f5f5; display: none;">
+            <h4>Yeni Alt Görev Ekle</h4>
+            <form id="newSubtaskForm">
+                 <div class="form-group">
+                    <label for="newSubtaskName">Alt Görev Adı:</label>
+                    <input type="text" id="newSubtaskName" placeholder="Alt görev adını girin" style="width: calc(100% - 20px); padding: 8px; margin-bottom: 10px;">
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                    <div class="form-group" style="flex: 1; min-width: 120px;"><label for="subtaskBinaIci">Bina İçi:</label><input type="number" id="subtaskBinaIci" value="0" min="0" style="width: 100%; padding: 8px;"></div>
+                    <div class="form-group" style="flex: 1; min-width: 120px;"><label for="subtaskBinaDisi">Bina Dışı:</label><input type="number" id="subtaskBinaDisi" value="0" min="0" style="width: 100%; padding: 8px;"></div>
+                    <div class="form-group" style="flex: 1; min-width: 120px;"><label for="subtaskSozlesme">Sözleşme:</label><input type="number" id="subtaskSozlesme" value="0" min="0" style="width: 100%; padding: 8px;"></div>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                    <div class="form-group" style="flex: 1; min-width: 120px;"><label for="subtaskYapilan">Yapılan:</label><input type="number" id="subtaskYapilan" value="0" min="0" style="width: 100%; padding: 8px;"></div>
+                    <div class="form-group" style="flex: 1; min-width: 120px;"><label for="subtaskGerekenGun">Gereken Gün:</label><input type="number" id="subtaskGerekenGun" value="0" min="0" style="width: 100%; padding: 8px;"></div>
+                </div>
+            </form>
+            <button id="addSubtaskButton" class="login-button" style="width: auto; padding: 10px 20px;">Alt Görev Ekle</button>
+            <p id="addSubtaskMessage" class="message" style="display: none; margin-top: 10px;"></p>
+        </div>
+    </div>
+    <div class="button-container">
+        <button class="back-button" onclick="window.location.href='index.html'">← Anasayfaya Dön</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!localStorage.getItem('loggedInUser')) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const loggedInUser = localStorage.getItem('loggedInUser');
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
+            const taskDetailTitle = document.getElementById('task-detail-title');
+            const subTasksBody = document.getElementById('sub-tasks-body');
+            const addSubtaskSection = document.getElementById('addSubtaskSection');
+            const subtaskAdminHeader = document.getElementById('subtaskAdminHeader');
+            const userProfileInitialDiv = document.getElementById('userProfileInitial');
+            const logoutButton = document.getElementById('logoutButton');
+            const exportExcelBtn = document.getElementById('exportExcelBtn'); // YENİ
+
+            if (loggedInUser && userProfileInitialDiv) {
+                userProfileInitialDiv.textContent = loggedInUser.charAt(0).toUpperCase();
+            }
+
+            if (logoutButton) {
+                logoutButton.addEventListener('click', () => {
+                    localStorage.removeItem('loggedInUser');
+                    localStorage.removeItem('isAdmin');
+                    localStorage.removeItem('selectedCustomer');
+                    window.location.href = 'login.html';
+                });
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const taskName = urlParams.get('taskName');
+            const taskId = urlParams.get('taskId');
+
+            if (taskName && taskId) {
+                taskDetailTitle.textContent = decodeURIComponent(taskName) + " Detayları";
+
+                // YENİ: Excel indirme butonunun linkini ayarla ve görünür yap
+                exportExcelBtn.href = `${BASE_URL}/api/tasks/${taskId}/export`;
+                exportExcelBtn.style.display = 'inline-block';
+
+                if (isAdmin) {
+                    addSubtaskSection.style.display = 'block';
+                    subtaskAdminHeader.style.display = 'table-cell';
+                    setupAddSubtaskForm(taskId, loggedInUser);
+                }
+
+                await renderSubtasks(taskId);
+            } else {
+                taskDetailTitle.textContent = "Görev Seçilmedi veya Bilgi Eksik";
+                subTasksBody.innerHTML = '<tr><td colspan="8">Lütfen ana sayfadan bir görev seçin.</td></tr>';
+            }
+        });
+
+        // Diğer tüm JavaScript fonksiyonları (renderSubtasks, toggleEditMode, vb.) aynı kalabilir.
+        // Önceki adımdaki düzeltilmiş halleriyle devam edebilirsiniz.
+        async function renderSubtasks(taskId) {
+            const subTasksBody = document.getElementById('sub-tasks-body');
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+            subTasksBody.innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}">Alt görevler yükleniyor...</td></tr>`;
+            try {
+                const response = await fetch(`${BASE_URL}/api/subtasks/${taskId}`);
+                if (!response.ok) throw new Error('Alt görevler API\'den alınamadı.');
+                const currentSubTasks = await response.json();
+                if (currentSubTasks && currentSubTasks.length > 0) {
+                    subTasksBody.innerHTML = '';
+                    currentSubTasks.forEach(subTask => {
+                        const row = document.createElement('tr');
+                        row.dataset.subtaskId = subTask.id;
+                        row.innerHTML = `<td data-field="name" data-value="${subTask.name}"><span>${subTask.name}</span></td><td data-field="binaIci" data-value="${subTask.binaIci}"><span>${subTask.binaIci}</span></td><td data-field="binaDisi" data-value="${subTask.binaDisi}"><span>${subTask.binaDisi}</span></td><td data-field="sozlesme" data-value="${subTask.sozlesme}"><span>${subTask.sozlesme}</span></td><td data-field="yapilan" data-value="${subTask.yapilan}"><span>${subTask.yapilan}</span></td><td data-field="yuzde" data-value="${subTask.yuzde}" class="calculated-percentage"><span>${subTask.yuzde}%</span></td><td data-field="gerekenGun" data-value="${subTask.gerekenGun}"><span>${subTask.gerekenGun}</span></td>${isAdmin ? `<td class="admin-controls"><button class="admin-button edit-button">Düzenle</button><button class="admin-button delete-button delete">Sil</button><button class="admin-button save-button save" style="display:none;">Kaydet</button><button class="admin-button cancel-button cancel" style="display:none;">İptal</button></td>` : ''}`;
+                        subTasksBody.appendChild(row);
+                    });
+                    if (isAdmin) addAdminEventListeners();
+                } else {
+                    subTasksBody.innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}">Bu görev için detaylı alt görev bilgisi bulunmamaktadır.</td></tr>`;
+                }
+            } catch (error) {
+                console.error('Alt görevleri render ederken hata:', error);
+                subTasksBody.innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}" style="color: red;">Veri yüklenirken bir hata oluştu.</td></tr>`;
+            }
+        }
+        function addAdminEventListeners() {
+            document.querySelectorAll('#sub-tasks-body tr').forEach(row => {
+                const editButton = row.querySelector('.edit-button');
+                const deleteButton = row.querySelector('.delete-button');
+                const saveButton = row.querySelector('.save-button');
+                const cancelButton = row.querySelector('.cancel-button');
+                if(editButton) editButton.onclick = () => toggleEditMode(row, true);
+                if(deleteButton) deleteButton.onclick = () => { if (confirm('Bu alt görevi silmek istediğinize emin misiniz?')) { deleteSubtask(row.dataset.subtaskId); } };
+                if(saveButton) saveButton.onclick = () => saveEditedSubtask(row);
+                if(cancelButton) cancelButton.onclick = () => toggleEditMode(row, false);
+            });
+        }
+        function toggleEditMode(row, enable) {
+            row.querySelector('.edit-button').style.display = enable ? 'none' : 'inline-block';
+            row.querySelector('.delete-button').style.display = enable ? 'none' : 'inline-block';
+            row.querySelector('.save-button').style.display = enable ? 'inline-block' : 'none';
+            row.querySelector('.cancel-button').style.display = enable ? 'inline-block' : 'none';
+            row.classList.toggle('editing', enable);
+            const cells = row.querySelectorAll('td[data-field]');
+            if (enable) {
+                cells.forEach(cell => {
+                    const field = cell.dataset.field;
+                    if (field === 'yuzde') return;
+                    const value = cell.dataset.value;
+                    const inputType = (field === 'name') ? 'text' : 'number';
+                    cell.innerHTML = `<input type="${inputType}" value="${value}" min="0" class="edit-input">`;
+                    if (inputType === 'number') {
+                        cell.querySelector('input').addEventListener('input', () => updateLivePercentage(row));
+                    }
+                });
+            } else {
+                 const urlParams = new URLSearchParams(window.location.search);
+                 renderSubtasks(urlParams.get('taskId'));
+            }
+        }
+        function updateLivePercentage(row) {
+            const yapilan = parseInt(row.querySelector('td[data-field="yapilan"] input')?.value || 0, 10);
+            const gerekenGun = parseInt(row.querySelector('td[data-field="gerekenGun"] input')?.value || 0, 10);
+            const yuzdeCell = row.querySelector('td[data-field="yuzde"] span');
+            if(yuzdeCell) { yuzdeCell.textContent = ((gerekenGun > 0) ? Math.round((yapilan / gerekenGun) * 100) : 0) + '%'; }
+        }
+        async function saveEditedSubtask(row) {
+            const subtaskId = row.dataset.subtaskId;
+            const updatedData = { username: localStorage.getItem('loggedInUser') };
+            let isValid = true;
+            row.querySelectorAll('input.edit-input').forEach(input => {
+                const field = input.closest('td').dataset.field;
+                if(input.type === 'text'){
+                    if(!input.value.trim()){ isValid = false; }
+                    updatedData[field] = input.value.trim();
+                } else {
+                    const numValue = parseInt(input.value, 10);
+                     if(isNaN(numValue) || numValue < 0){ isValid = false; }
+                    updatedData[field] = numValue;
+                }
+            });
+            if (!isValid) { alert('Lütfen tüm alanları geçerli şekilde doldurun.'); return; }
+            try {
+                const response = await fetch(`${BASE_URL}/api/subtasks/${subtaskId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedData)
+                });
+                const data = await response.json();
+                alert(data.message);
+                if (response.ok) { await renderSubtasks(new URLSearchParams(window.location.search).get('taskId')); }
+            } catch (error) { alert('Sunucuya bağlanırken hata oluştu.'); }
+        }
+        function setupAddSubtaskForm(taskId, loggedInUser) {
+            const form = document.getElementById('newSubtaskForm');
+            const addButton = document.getElementById('addSubtaskButton');
+            const messageP = document.getElementById('addSubtaskMessage');
+            addButton.addEventListener('click', async () => {
+                const name = document.getElementById('newSubtaskName').value.trim();
+                const binaIci = parseInt(document.getElementById('subtaskBinaIci').value, 10);
+                const binaDisi = parseInt(document.getElementById('subtaskBinaDisi').value, 10);
+                const sozlesme = parseInt(document.getElementById('subtaskSozlesme').value, 10);
+                const yapilan = parseInt(document.getElementById('subtaskYapilan').value, 10);
+                const gerekenGun = parseInt(document.getElementById('subtaskGerekenGun').value, 10);
+                if (name === '' || isNaN(binaIci) || isNaN(binaDisi) || isNaN(sozlesme) || isNaN(yapilan) || isNaN(gerekenGun)) {
+                    messageP.textContent = 'Lütfen tüm alanları geçerli ve sayısal değerlerle doldurun.';
+                    messageP.style.color = '#e74c3c';
+                    messageP.style.display = 'block';
+                    return;
+                }
+                const subtaskData = { username: loggedInUser, task_id: taskId, name, binaIci, binaDisi, sozlesme, yapilan, gerekenGun };
+                try {
+                    const response = await fetch(`${BASE_URL}/api/subtasks`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(subtaskData)
+                    });
+                    const data = await response.json();
+                    messageP.textContent = data.message;
+                    messageP.style.color = response.ok ? '#27ae60' : '#e74c3c';
+                    messageP.style.display = 'block';
+                    if (response.ok) { document.getElementById('newSubtaskForm').reset(); await renderSubtasks(taskId); }
+                } catch (error) { messageP.textContent = 'Sunucuya bağlanılamadı.'; messageP.style.color = '#e74c3c'; messageP.style.display = 'block'; }
+            });
+        }
+        async function deleteSubtask(subtaskId) {
+            try {
+                const response = await fetch(`${BASE_URL}/api/subtasks/${subtaskId}`, {
+                    method: 'DELETE',
+                    headers: { 'X-Requested-By-Username': localStorage.getItem('loggedInUser') }
+                });
+                const data = await response.json();
+                alert(data.message);
+                if (response.ok) { await renderSubtasks(new URLSearchParams(window.location.search).get('taskId')); }
+            } catch (error) { alert('Sunucuya bağlanılamadı.'); }
+        }
+    </script>
+<script src="config.js"></script>
+</body>
+</html>

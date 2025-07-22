@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Müşteri Seçimi - GoDesign Tracking</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .customer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .customer-card {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #34495e;
+        }
+        .customer-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        .form-section {
+            background-color: #f9f9f9;
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+<div class="header-left">
+    <a href="index.html" class="header-logo-link">
+        <img src="1630610815624.jpg" alt="GoDesign Logo" class="header-logo">
+    </a>
+</div>
+        <div class="header-right">
+            <div class="user-profile-container">
+                <div class="user-profile" id="userProfileInitial">A</div>
+                <button class="logout-button" id="logoutButton">Çıkış Yap</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>Müşteri Yönetimi</h1>
+        
+        <h2>Mevcut Müşteriler</h2>
+        <div id="customerList" class="customer-grid">
+            <p>Müşteriler yükleniyor...</p>
+        </div>
+
+        <div class="form-section">
+            <h3>Yeni Müşteri Oluştur</h3>
+            <p>Yeni müşteri hesabı oluşturun. Bu müşteri için varsayılan görevler otomatik olarak kopyalanacaktır.</p>
+            <form id="newCustomerForm">
+                <div class="form-group">
+                    <label for="newUsername">Yeni Müşteri Kullanıcı Adı:</label>
+                    <input type="text" id="newUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">Yeni Müşteri Şifresi:</label>
+                    <input type="password" id="newPassword" required>
+                </div>
+                <button type="submit" class="login-button" style="width: auto; padding: 10px 20px;">Müşteri Oluştur</button>
+                <p id="customerMessage" class="message" style="display: none;"></p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const loggedInUser = localStorage.getItem('loggedInUser');
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
+            if (!isAdmin) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            const userProfileInitialDiv = document.getElementById('userProfileInitial');
+            const logoutButton = document.getElementById('logoutButton');
+            
+            if (loggedInUser) {
+                userProfileInitialDiv.textContent = loggedInUser.charAt(0).toUpperCase();
+            }
+
+            if (logoutButton) {
+                logoutButton.addEventListener('click', () => {
+                    localStorage.removeItem('loggedInUser');
+                    localStorage.removeItem('isAdmin');
+                    localStorage.removeItem('selectedCustomer');
+                    window.location.href = 'login.html';
+                });
+            }
+
+            const customerListDiv = document.getElementById('customerList');
+            const newCustomerForm = document.getElementById('newCustomerForm');
+            const customerMessage = document.getElementById('customerMessage');
+
+            async function loadCustomers() {
+                try {
+                    const response = await fetch(`${BASE_URL}/api/customers`);
+                    if (!response.ok) throw new Error('Müşteriler yüklenemedi.');
+                    
+                    const customers = await response.json();
+                    customerListDiv.innerHTML = ''; 
+
+                    if (customers.length === 0) {
+                        customerListDiv.innerHTML = '<p>Henüz hiç müşteri oluşturulmamış.</p>';
+                    } else {
+                        customers.forEach(customer => {
+                            const customerCard = document.createElement('div');
+                            customerCard.className = 'customer-card';
+                            customerCard.textContent = customer.username;
+                            customerCard.addEventListener('click', () => {
+                                localStorage.setItem('selectedCustomer', customer.username);
+                                window.location.href = 'index.html';
+                            });
+                            customerListDiv.appendChild(customerCard);
+                        });
+                    }
+                } catch (error) {
+                    customerListDiv.innerHTML = `<p style="color: #e74c3c;">${error.message}</p>`;
+                }
+            }
+
+            newCustomerForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const newUsername = document.getElementById('newUsername').value.trim();
+                const newPassword = document.getElementById('newPassword').value;
+
+                if (!newUsername || !newPassword) {
+                    alert('Kullanıcı adı ve şifre boş bırakılamaz.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${BASE_URL}/api/customers`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            admin_username: loggedInUser,
+                            new_customer_username: newUsername,
+                            new_customer_password: newPassword
+                        })
+                    });
+
+                    const data = await response.json();
+                    customerMessage.textContent = data.message;
+                    
+                    if (response.ok) {
+                        customerMessage.style.color = '#27ae60';
+                        newCustomerForm.reset();
+                        await loadCustomers();
+                    } else {
+                        customerMessage.style.color = '#e74c3c';
+                    }
+                    customerMessage.style.display = 'block';
+
+                } catch (error) {
+                    customerMessage.textContent = 'Sunucuya bağlanılamadı: ' + error.message;
+                    customerMessage.style.color = '#e74c3c';
+                    customerMessage.style.display = 'block';
+                }
+            });
+
+            await loadCustomers();
+        });
+    </script>
+<script src="config.js"></script>
+</body>
+</html>

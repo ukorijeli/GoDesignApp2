@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş Yap - GoDesign Tracking</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-page-body">
+    <div class="login-container">
+        <img src="1630610815624.jpg" alt="GoDesign Logo" class="login-logo">
+        <h1>GoDesign Tracking</h1>
+        <p>Giriş Yap</p>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Kullanıcı Adı:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Şifre:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="login-button">Giriş Yap</button>
+            <p id="errorMessage" class="message">Kullanıcı adı veya şifre hatalı.</p>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            localStorage.removeItem('selectedCustomer');
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('loggedInUser', data.username);
+                    localStorage.setItem('isAdmin', data.is_admin);
+                    
+                    if (data.is_admin) {
+                        window.location.href = 'musteri_secimi.html';
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+
+                } else {
+                    errorMessage.textContent = data.message || 'Giriş başarısız oldu.';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Giriş isteği hatası:', error);
+                errorMessage.textContent = 'Sunucuya bağlanılamadı veya bir hata oluştu.';
+                errorMessage.style.display = 'block';
+            }
+        });
+
+        if (localStorage.getItem('loggedInUser')) {
+            if (localStorage.getItem('isAdmin') === 'true' && !localStorage.getItem('selectedCustomer')) {
+                 window.location.href = 'musteri_secimi.html';
+            } else if (localStorage.getItem('isAdmin') === 'true' || localStorage.getItem('loggedInUser')) {
+                 window.location.href = 'index.html';
+            }
+        }
+    </script>
+<script src="config.js"></script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maliyet Tablosu - GoDesign Tracking</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Sadece bu sayfaya özel stiller */
+        .table-container {
+            width: 100%;
+            overflow-x: auto; /* Geniş tablolar için yatay kaydırma */
+        }
+        .cost-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+            font-size: 0.9em;
+        }
+        .cost-table th, .cost-table td {
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    text-align: left;
+    /* white-space: nowrap;  <-- BU SATIRI SİLİN VEYA YORUM YAPIN */
+}
+        .cost-table thead th {
+            background-color: #34495e;
+            color: white;
+            position: sticky;
+            top: 0; /* Başlıkların kaydırırken sabit kalması için */
+        }
+        .cost-table tbody tr:nth-of-type(even) {
+            background-color: #f9f9f9;
+        }
+        .cost-table tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+<div class="header-left">
+    <a href="index.html" class="header-logo-link">
+        <img src="1630610815624.jpg" alt="GoDesign Logo" class="header-logo">
+    </a>
+</div>
+        <div class="header-right">
+            <div class="user-profile-container">
+                <div class="user-profile" id="userProfileInitial">U</div>
+                <button class="logout-button" id="logoutButton">Çıkış Yap</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+	<div id="addCostSection" style="display: none; margin-bottom: 30px;">
+    <h2>Yeni Maliyet veya Ödeme Ekle</h2>
+    <form id="newCostForm" class="form-section">
+        <p>Bir maliyet eklemek için "İşin Bedeli"ni, bir ödeme eklemek için "Yapılan Ödeme"yi doldurun.</p>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="newIsKalemi">İş Kalemi:</label>
+                <input type="text" id="newIsKalemi" required>
+            </div>
+            <div class="form-group">
+                <label for="newAltKalem">Alt Kalem / Açıklama:</label>
+                <input type="text" id="newAltKalem" required>
+            </div>
+            <div class="form-group">
+                <label for="newIsinBedeli">İşin Bedeli:</label>
+                <input type="text" id="newIsinBedeli" placeholder="Sadece sayı girin (örn: 100000)" value="0">
+            </div>
+            <div class="form-group">
+                <label for="newYapilanOdeme">Yapılan Ödeme:</label>
+                <input type="text" id="newYapilanOdeme" placeholder="Sadece sayı girin (örn: 50000)" value="0">
+            </div>
+            <div class="form-group">
+                <label for="newOdemeSekli">Ödeme Şekli:</label>
+                <input type="text" id="newOdemeSekli">
+            </div>
+            <div class="form-group">
+                <label for="newOdemeTarihi">Ödeme Tarihi:</label>
+                <input type="text" id="newOdemeTarihi" placeholder="Örn: 25.06.2025">
+            </div>
+        </div>
+        <button type="submit" class="login-button" style="width: auto; padding: 10px 30px;">Kaydı Ekle</button>
+        <p id="addCostMessage" class="message" style="display: none;"></p>
+    </form>
+</div>
+		<div style="display: flex; justify-content: space-between; align-items: center;">
+    <h1>Şantiye Maliyetlendirme Tablosu</h1>
+    <button id="exportExcelBtn" class="login-button" style="width: auto; padding: 10px 20px; font-size: 0.9em; background-color: #27ae60;">
+        Excel Olarak İndir
+    </button>
+</div>
+        <div class="table-container">
+            <table class="cost-table">
+                <thead id="cost-table-head">
+                    </thead>
+                <tbody id="cost-table-body">
+                    <tr><td id="loading-cell">Veriler yükleniyor...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="maliyet.js"></script>
+<script src="config.js"></script>
+</body>
+</html>
