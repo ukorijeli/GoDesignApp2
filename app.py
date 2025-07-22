@@ -671,7 +671,7 @@ def get_gorseller(customer_username):
         'filename': g.filename,
         'file_type': g.file_type,
         'caption': g.caption,
-        'url': f'${BASE_URL}/static/uploads/{g.filename}' # <-- DEĞİŞİKLİK BURADA
+        'url': f'/static/uploads/{g.filename}' # <-- DEĞİŞİKLİK BURADA
     } for g in gorseller_from_db]
     return jsonify(gorseller_list)
 
