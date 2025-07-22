@@ -14,7 +14,8 @@ app = Flask(__name__)
 CORS(app) # <-- YENİ EKLENEN SATIR
 
 # --- Veritabanı Yapılandırması ---
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+print(f"DEBUG: DATABASE_URL is set to: {app.config['SQLALCHEMY_DATABASE_URI']}")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
