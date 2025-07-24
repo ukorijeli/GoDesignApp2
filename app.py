@@ -14,8 +14,9 @@ app = Flask(__name__)
 CORS(app) # <-- YENİ EKLENEN SATIR
 
 # --- Veritabanı Yapılandırması ---
-basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'site.db')
+# --- Veritabanı Yapılandırması ---
+# Ortam değişkeninden DATABASE_URL'yi al, yoksa yerelde SQLite kullan
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'site.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
